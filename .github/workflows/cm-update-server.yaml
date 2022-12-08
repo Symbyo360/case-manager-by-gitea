@@ -6,9 +6,9 @@ concurrency:
   group: self-aws-hosted-${{ github.head_ref || github.ref }}-${{ github.base_ref }}
   cancel-in-progress: true
 
-# env:
-#   GOPATH: /root/cm/appdata/godata
-#   GOCACHE: /root/cm/appdata/godata/cache
+env:
+  GOCACHE: /home/ubuntu/cmtools/appdata/godata/cache
+  GOPATH: /home/ubuntu/cmtools/appdata/godata
 #   HOME: /root/
 
 jobs:
