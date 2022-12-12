@@ -35,11 +35,6 @@ jobs:
       - run: echo "🖥️ The workflow is now ready to start building the ${{ github.repository }} code."
       - run: systemctl list-unit-files --no-pager |grep newfile
       - run: whoami
-      - run: sudo systemctl status filemanager.service
-
-      - run: sudo systemctl stop filemanager.service
-
-      - run: sudo cp ./gitea /home/git/newfilemanager/filemanager
 
       - name: Build the app
         id: NewBuild
@@ -49,10 +44,10 @@ jobs:
         if: contains( steps.NewBuild.outcome , 'success' )
         run: |
           whoami
-          sudo systemctl stop filemanager.service
-          sudo systemctl status filemanager.service
+          sudo systemctl stop newfilemanager.service
+          sudo systemctl status newfilemanager.service
           sudo cp ./gitea /home/git/newfilemanager/filemanager
-          sudo systemctl start filemanager.service
-          sudo systemctl status filemanager.service
+          sudo systemctl start newfilemanager.service
+          sudo systemctl status newfilemanager.service
 
         # chown git:git /home/git/newfilemanager/filemanager
