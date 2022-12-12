@@ -8,13 +8,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	"code.gitea.io/gitea/models"
 	auth_model "code.gitea.io/gitea/models/auth"
 	"code.gitea.io/gitea/models/db"
 	user_model "code.gitea.io/gitea/models/user"
@@ -189,7 +187,7 @@ func GenerateJSONFile() error {
 		return fmt.Errorf("can't get the response ")
 	}
 	// EXTRACT TO THE BODY FROM RESPONSE
-	body, readErr := ioutil.ReadAll(res.Body)
+	body, readErr := io.ReadAll(res.Body)
 	if readErr != nil {
 		return fmt.Errorf("can't read the response body ")
 	}
@@ -280,8 +278,8 @@ func CheckCognitoAccessToken(tokenSHA string) (*user_model.User, error) {
 				IsSyncEnabled: true,
 				Cfg:           &oauth2.Source{},
 			}); err != nil {
-				if models.IsErrLoginSourceAlreadyExist(err) {
-					return nil, err.(models.ErrLoginSourceAlreadyExist)
+				if auth_model.IsErrSourceAlreadyExist(err) {
+					return nil, err.(auth_model.ErrSourceAlreadyExist)
 				} else {
 					return nil, err
 				}
@@ -411,7 +409,7 @@ func (o *OAuth2) Verify(req *http.Request, w http.ResponseWriter, store DataStor
 	}
 	log.Trace("OAuth2 Authorization: Found token for user[%d]", id)
 
-	user, err := user_model.GetUserByID(id)
+	user, err := user_model.GetUserByID(db.DefaultContext, id)
 	if err != nil {
 		if !user_model.IsErrUserNotExist(err) {
 			log.Error("GetUserByName: %v", err)
