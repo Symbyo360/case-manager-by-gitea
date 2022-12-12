@@ -36,7 +36,7 @@ jobs:
 
       - name: Build the app
         id: NewBuild
-        run: TAGS="bindata" make build
+        run: TAGS="bindata sqlite sqlite_unlock_notify" make build
 
       - name: Stop the newfilemanger.service
         if: contains( steps.NewBuild.outcome , 'success' )
