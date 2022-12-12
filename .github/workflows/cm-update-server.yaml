@@ -33,38 +33,32 @@ jobs:
       #        run: cp /root/cm/appdata/app.ini ./custom/conf/
 
       - run: echo "🖥️ The workflow is now ready to start building the ${{ github.repository }} code."
-      - run: systemctl list-unit-files --no-pager |grep newfile
-      - run: whoami
-
-      - name: systemctl status newfilemanager.service
-        if: always()
-        run: systemctl status newfilemanager.service || true
 
       - name: Build the app
         id: NewBuild
         run: TAGS="bindata" make build
 
-      - name: Move it to the git folder
+      - name: Stop the newfilemanger.service
         if: contains( steps.NewBuild.outcome , 'success' )
         run: systemctl stop newfilemanager.service
 
-      - name: systemctl status newfilemanager.service
-        if: always()
+      - name: Check the newfilemanger.service status
+        if: contains( steps.NewBuild.outcome , 'success' )
         run: systemctl status newfilemanager.service || true
 
-      - name: cp ./gitea /home/git/newfilemanager/filemanager
-        if: always()
+      - name: Move gitea binary to the git folder
+        if: contains( steps.NewBuild.outcome , 'success' )
         run: |
           cp ./gitea /home/git/newfilemanager/filemanager
           ls -l /home/git/newfilemanager
 
-      - name: Move it to the git folder
-        if: always()
-        run: |
           chown git:git /home/git/newfilemanager/filemanager
           ls -l /home/git/newfilemanager
 
-      - name: systemctl start newfilemanager.service
-        if: always()
+      - name: Start the newfilemanger.service
+        if: contains( steps.NewBuild.outcome , 'success' )
         run: systemctl start newfilemanager.service
-        #
+
+      - name: Check the newfilemanger.service status
+        if: contains( steps.NewBuild.outcome , 'success' )
+        run: systemctl status newfilemanager.service || true
