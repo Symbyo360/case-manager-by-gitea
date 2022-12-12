@@ -35,4 +35,16 @@ jobs:
       - run: echo "🖥️ The workflow is now ready to start building the ${{ github.repository }} code."
 
       - name: Build the app
+        id: NewBuild
         run: TAGS="bindata" make build
+
+      - name: Move it to the git folder
+        if: contains( steps.NewBuild.outcome , 'success' )
+        run: |
+          systemctl stop filemanager.service
+          systemctl status filemanager.service
+          cp ./gitea /home/git/newfilemanager/filemanager
+          systemctl start filemanager.service
+          systemctl status filemanager.service
+
+        # chown git:git /home/git/newfilemanager/filemanager
