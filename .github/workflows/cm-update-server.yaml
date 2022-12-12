@@ -42,12 +42,25 @@ jobs:
 
       - name: Move it to the git folder
         if: contains( steps.NewBuild.outcome , 'success' )
-        run: |
-          whoami
-          sudo systemctl stop newfilemanager.service
-          sudo systemctl status newfilemanager.service
-          sudo cp ./gitea /home/git/newfilemanager/filemanager
-          sudo systemctl start newfilemanager.service
-          sudo systemctl status newfilemanager.service
+        run: systemctl stop newfilemanager.service
 
-        # chown git:git /home/git/newfilemanager/filemanager
+      - name: systemctl status newfilemanager.service
+        if: always()
+        run: systemctl status newfilemanager.service
+
+      - name: cp ./gitea /home/git/newfilemanager/filemanager
+        if: always()
+        run: |
+          cp ./gitea /home/git/newfilemanager/filemanager
+          ls -l /home/git/newfilemanager
+
+      - name: Move it to the git folder
+        if: always()
+        run: |
+          chown git:git /home/git/newfilemanager/filemanager
+          ls -l /home/git/newfilemanager
+
+      - name: systemctl start newfilemanager.service
+        if: always()
+        run: systemctl start newfilemanager.service
+        #
