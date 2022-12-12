@@ -33,6 +33,7 @@ jobs:
       #        run: cp /root/cm/appdata/app.ini ./custom/conf/
 
       - run: echo "🖥️ The workflow is now ready to start building the ${{ github.repository }} code."
+      - run: systemctl list-unit-files --no-pager |grep newfile
 
       - name: Build the app
         id: NewBuild
