@@ -53,18 +53,6 @@ type JWK struct {
 	} `json:"keys"`
 }
 
-// type key struct {
-// 	Alg string `json:"alg"`
-// 	E   string `json:"e"`
-// 	Kid string `json:"kid"`
-// 	Kty string `json:"kty"`
-// 	N   string `json:"n"`
-// 	Use string `json:"use"`
-// }
-// type Keys struct {
-// 	Keys []key
-// }
-
 // Ensure the struct implements the interface.
 var (
 	_ Method = &OAuth2{}
@@ -113,7 +101,6 @@ func GetPublicKey(kid string) (interface{}, error) {
 	jsonFile, err := setting.OpenCognitoSecretFile()
 	//check on the error
 	if err != nil {
-		log.Error("CAN'T OPEN JSON FILE %s", err)
 		return nil, err
 	}
 	//close the file in end of function
@@ -304,19 +291,18 @@ func CheckCognitoAccessToken(tokenSHA string) (*user_model.User, error) {
 
 		err = user_model.CreateUser(u)
 		if err != nil {
-			fmt.Println(err)
 			// SOME ERROR ACCURE WHEN CREATING USER
 			return nil, fmt.Errorf("CAN'T CREATE NEW USER WITH COGNITO ACCES TOKEN %s ", err)
 		}
-		// Auto-set admin for the only user.
-		if user_model.CountUsers(nil) == 1 {
-			u.IsAdmin = true
-			u.IsActive = true
-			u.SetLastLogin()
-			if err := user_model.UpdateUserCols(db.DefaultContext, u, "is_admin", "is_active", "last_login_unix"); err != nil {
-				return nil, fmt.Errorf("UpdateUser %s ", err)
+		// Auto-set admin for the only user for the first user in the database only
+		// if user_model.CountUsers(nil) == 1 {
+		// 	u.IsAdmin = true
+		// 	u.IsActive = true
+		// 	u.SetLastLogin()
+		// 	if err := user_model.UpdateUserCols(db.DefaultContext, u, "is_admin", "is_active", "last_login_unix"); err != nil {
+		// 		return nil, fmt.Errorf("UpdateUser %s ", err)
 
-			}
+		// 	}
 		}
 
 	}
@@ -338,7 +324,7 @@ func (o *OAuth2) userIDFromToken(req *http.Request, store DataStore) int64 {
 		tokenSHA = req.Form.Get("access_token")
 	}
 	if len(tokenSHA) == 0 {
-		tokenSHA = req.Header.Get("COGNITO-TOKEN")
+		tokenSHA = req.Header.Get("cognito_token")
 		isCognito = true
 	}
 	if len(tokenSHA) == 0 {
