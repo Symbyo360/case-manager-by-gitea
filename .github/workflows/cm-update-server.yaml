@@ -35,4 +35,33 @@ jobs:
       - run: echo "🖥️ The workflow is now ready to start building the ${{ github.repository }} code."
 
       - name: Build the app
+        id: NewBuild
         run: TAGS="bindata" make build
+        # run: TAGS="bindata sqlite sqlite_unlock_notify" make build # if you want sqlite DB
+
+      - name: Stop the filemanger.service
+        if: contains( steps.NewBuild.outcome , 'success' )
+        run: systemctl stop filemanger.service
+
+      - name: Check the filemanger.service status
+        if: contains( steps.NewBuild.outcome , 'success' )
+        run: systemctl status filemanger.service || true
+
+      - name: Move gitea binary to the cm folder
+        if: contains( steps.NewBuild.outcome , 'success' )
+        run: |
+          cp ./gitea /home/cm/fileManagerDir/fileManager
+          ls -l /home/cm/fileManagerDir
+
+          chown cm:cm /home/cm/fileManagerDir/fileManager
+          chmod +x /home/cm/fileManagerDir/fileManager
+
+          ls -l /home/cm/fileManagerDir
+
+      - name: Start the filemanger.service
+        if: contains( steps.NewBuild.outcome , 'success' )
+        run: systemctl start filemanger.service
+
+      - name: Check the filemanger.service status
+        if: contains( steps.NewBuild.outcome , 'success' )
+        run: systemctl status filemanger.service || true
