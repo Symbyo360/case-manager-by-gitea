@@ -276,8 +276,6 @@ func CheckCognitoAccessToken(tokenSHA string) (*user_model.User, error) {
 				return nil, err
 			}
 		}
-
-		log.Debug("User will be created")
 		// CREATE NEW USER
 		u = &user_model.User{
 			LowerName:   strings.ToLower(*res.Username),
