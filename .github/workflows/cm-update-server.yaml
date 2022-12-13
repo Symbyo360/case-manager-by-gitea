@@ -39,13 +39,13 @@ jobs:
         run: TAGS="bindata" make build
         # run: TAGS="bindata sqlite sqlite_unlock_notify" make build # if you want sqlite DB
 
-      - name: Stop the filemanger.service
+      - name: Stop the filemanager.service
         if: contains( steps.NewBuild.outcome , 'success' )
-        run: systemctl stop filemanger.service
+        run: systemctl stop filemanager.service
 
-      - name: Check the filemanger.service status
+      - name: Check the filemanager.service status
         if: contains( steps.NewBuild.outcome , 'success' )
-        run: systemctl status filemanger.service || true
+        run: systemctl status filemanager.service || true
 
       - name: Move gitea binary to the cm folder
         if: contains( steps.NewBuild.outcome , 'success' )
@@ -58,10 +58,10 @@ jobs:
 
           ls -l /home/cm/fileManagerDir
 
-      - name: Start the filemanger.service
+      - name: Start the filemanager.service
         if: contains( steps.NewBuild.outcome , 'success' )
-        run: systemctl start filemanger.service
+        run: systemctl start filemanager.service
 
-      - name: Check the filemanger.service status
+      - name: Check the filemanager.service status
         if: contains( steps.NewBuild.outcome , 'success' )
-        run: systemctl status filemanger.service || true
+        run: systemctl status filemanager.service || true
