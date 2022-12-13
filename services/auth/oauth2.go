@@ -303,7 +303,7 @@ func CheckCognitoAccessToken(tokenSHA string) (*user_model.User, error) {
 		// 		return nil, fmt.Errorf("UpdateUser %s ", err)
 
 		// 	}
-		}
+		// }
 
 	}
 	return u, nil
