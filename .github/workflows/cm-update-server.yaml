@@ -1,0 +1,66 @@
+name: Case Manager Server Update
+
+on:
+  push:
+    branches:
+      - "main"
+
+concurrency:
+  group: self-aws-hosted-${{ github.head_ref || github.ref }}-${{ github.base_ref }}
+  cancel-in-progress: true
+
+env:
+  GOCACHE: /home/ubuntu/cmtools/appdata/godata/cache
+  GOPATH: /home/ubuntu/cmtools/appdata/godata
+
+jobs:
+  build:
+    name: Building the case manager app
+    runs-on: NewCaseManagerRunnerLabel
+    steps:
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub."
+      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+
+      - name: Workaround the missing path environments
+        run: |
+          echo -n "/usr/local/go/bin" >> $GITHUB_PATH
+
+      - name: Check out the repository code
+        uses: actions/checkout@v2
+
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+
+      - run: echo "🖥️ The workflow is now ready to start building the ${{ github.repository }} code."
+
+      - name: Build the app
+        id: NewBuild
+        run: TAGS="bindata" make build
+        # run: TAGS="bindata sqlite sqlite_unlock_notify" make build # if you want sqlite DB
+
+      - name: Stop the filemanager.service
+        if: contains( steps.NewBuild.outcome , 'success' )
+        run: systemctl stop filemanager.service
+
+      - name: Check the filemanager.service status
+        if: contains( steps.NewBuild.outcome , 'success' )
+        run: systemctl status filemanager.service || true
+
+      - name: Move gitea binary to the cm folder
+        if: contains( steps.NewBuild.outcome , 'success' )
+        run: |
+          cp ./gitea /home/cm/fileManagerDir/fileManager
+          ls -l /home/cm/fileManagerDir
+
+          chown cm:cm /home/cm/fileManagerDir/fileManager
+          chmod +x /home/cm/fileManagerDir/fileManager
+
+          ls -l /home/cm/fileManagerDir
+
+      - name: Start the filemanager.service
+        if: contains( steps.NewBuild.outcome , 'success' )
+        run: systemctl start filemanager.service
+
+      - name: Check the filemanager.service status
+        if: contains( steps.NewBuild.outcome , 'success' )
+        run: systemctl status filemanager.service || true
