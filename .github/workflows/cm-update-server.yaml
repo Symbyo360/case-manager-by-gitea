@@ -1,6 +1,9 @@
 name: Case Manager Server Update
 
-on: pull_request
+on:
+  push:
+    branches:
+      - "main"
 
 concurrency:
   group: self-aws-hosted-${{ github.head_ref || github.ref }}-${{ github.base_ref }}
@@ -9,7 +12,6 @@ concurrency:
 env:
   GOCACHE: /home/ubuntu/cmtools/appdata/godata/cache
   GOPATH: /home/ubuntu/cmtools/appdata/godata
-#   HOME: /root/
 
 jobs:
   build:
@@ -28,9 +30,6 @@ jobs:
         uses: actions/checkout@v2
 
       - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-
-      #      - name: Set the app configuration on the right location
-      #        run: cp /root/cm/appdata/app.ini ./custom/conf/
 
       - run: echo "🖥️ The workflow is now ready to start building the ${{ github.repository }} code."
 
