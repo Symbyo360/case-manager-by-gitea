@@ -591,11 +591,20 @@ func UpdateFile(ctx *context.APIContext) {
 					ctx.Error(http.StatusBadRequest, "ContentIsEmpty", fmt.Errorf("content is empty"))
 					return
 				}
+				if len(apiOpts.Files[i].SHA256) == 0 {
+					ctx.Error(http.StatusBadRequest, "SHA256IsEmpty", fmt.Errorf("SHA256 is empty"))
+					return
+				}
 				opts.Content = apiOpts.Files[i].Content
+				opts.SHA256 = apiOpts.Files[i].SHA256
 			}
 
 			if fileAction == files_service.CreateFileAction {
 				opts.IsNewFile = true
+				if len(apiOpts.Files[i].SHA256) == 0 {
+					ctx.Error(http.StatusBadRequest, "SHA256IsEmpty", fmt.Errorf("SHA256 is empty"))
+					return
+				}
 			} else {
 				if len(apiOpts.Files[i].SHA) == 0 {
 					ctx.Error(http.StatusBadRequest, "SHAIsEmpty", fmt.Errorf("SHA is empty"))

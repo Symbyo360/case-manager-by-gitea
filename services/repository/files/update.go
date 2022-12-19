@@ -6,6 +6,7 @@ package files
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"path"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"code.gitea.io/gitea/models"
 	git_model "code.gitea.io/gitea/models/git"
 	repo_model "code.gitea.io/gitea/models/repo"
+	fileMeta_model "code.gitea.io/gitea/models/repofiles"
 	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/charset"
 	"code.gitea.io/gitea/modules/git"
@@ -57,6 +59,7 @@ type UpdateRepoFileOptions struct {
 	Message      string
 	Content      string
 	SHA          string
+	SHA256       string
 	IsNewFile    bool
 	Author       *IdentityOptions
 	Committer    *IdentityOptions
@@ -77,10 +80,10 @@ type UpdateRepoFilesOptions struct {
 }
 
 type PushedFileRes struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
-	SHA  string `json:"sha"`
-	// SHA256 string `json:"sha256"`
+	Name   string `json:"name"`
+	Path   string `json:"path"`
+	SHA    string `json:"sha"`
+	SHA256 string `json:"sha256"`
 }
 
 type PushedFilesRes struct {
@@ -796,6 +799,22 @@ func CreateOrUpdateOrDeleteRepoFiles(ctx context.Context, repo *repo_model.Repos
 					content = pointer.StringContent()
 				}
 			}
+			if opts.Files[i].FileAction != DeleteFileAction {
+
+				if err = fileMeta_model.CreatFileMeta(&fileMeta_model.FileMeta{Sha: base64.StdEncoding.EncodeToString([]byte(opts.Files[i].TreePath)), Sha256: opts.Files[i].SHA256}); err != nil {
+					return nil, err
+				} else {
+					log.Debug("file is created successfully")
+				}
+			} else {
+				id, err := fileMeta_model.DeleteFileMeta(ctx, base64.StdEncoding.EncodeToString([]byte(opts.Files[i].TreePath)))
+				if err != nil {
+					return nil, err
+				} else {
+					log.Debug("%v", id)
+				}
+			}
+
 			// Add the object to the database
 			objectHash, err := t.HashObject(strings.NewReader(content))
 			if err != nil {
@@ -845,7 +864,8 @@ func CreateOrUpdateOrDeleteRepoFiles(ctx context.Context, repo *repo_model.Repos
 	if err != nil {
 		return nil, err
 	}
-
+	// git commit-tree <LastCommitID>
+	// DAG ->
 	// Now commit the tree
 	var commitHash string
 	if opts.Files[0].Dates != nil {

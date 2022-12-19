@@ -94,6 +94,9 @@ type UpdateOrCreateOrDeleteFileOptions struct {
 	// file_action is the action of operation on file must be one of them : create, edit, delete
 	// required: true
 	FileAction string `json:"file_action"`
+	// sha256 is the SHA256 for the file
+	// require true
+	SHA256 string `json:"sha256"`
 }
 
 // ApplyDiffPatchFileOptions options for applying a diff patch
@@ -116,6 +119,7 @@ type ContentsResponse struct {
 	Name          string `json:"name"`
 	Path          string `json:"path"`
 	SHA           string `json:"sha"`
+	SHA256        string `json:"sha256"`
 	LastCommitSHA string `json:"last_commit_sha"`
 	// `type` will be `file`, `dir`, `symlink`, or `submodule`
 	Type string `json:"type"`
