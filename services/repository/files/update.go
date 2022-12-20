@@ -540,7 +540,6 @@ func CreateOrUpdateOrDeleteRepoFiles(ctx context.Context, repo *repo_model.Repos
 	if opts.NewBranch == "" {
 		opts.NewBranch = opts.OldBranch
 	}
-
 	message := strings.TrimSpace(opts.Message)
 	author, committer := GetAuthorAndCommitterUsers(opts.Author, opts.Committer, doer)
 
@@ -601,22 +600,23 @@ func CreateOrUpdateOrDeleteRepoFiles(ctx context.Context, repo *repo_model.Repos
 			}
 		}
 		hasOldBranch := true
+
 		if i == 0 {
 			if err := t.Clone(opts.OldBranch); err != nil {
 				if !git.IsErrBranchNotExist(err) || !repo.IsEmpty {
 					return nil, err
 				}
+				// Branch Not Exist = true and repo.isEmpty()
 				if err := t.Init(); err != nil {
 					return nil, err
 				}
 				hasOldBranch = false
 				opts.Files[i].LastCommitID = ""
 			}
-		}
-
-		if hasOldBranch {
-			if err := t.SetDefaultIndex(); err != nil {
-				return nil, err
+			if hasOldBranch {
+				if err := t.SetDefaultIndex(); err != nil {
+					return nil, err
+				}
 			}
 		}
 
