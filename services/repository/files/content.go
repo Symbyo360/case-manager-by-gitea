@@ -5,7 +5,8 @@ package files
 
 import (
 	"context"
-	"encoding/base64"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/url"
 	"path"
@@ -204,13 +205,19 @@ func GetContents(ctx context.Context, repo *repo_model.Repository, treePath, ref
 			return nil, err
 		}
 		contentsResponse.SHA256 = ""
-		isExist, err := fileMeta_model.IsFileMetaExist(ctx, base64.StdEncoding.EncodeToString([]byte(treePath)))
+
+		h := sha256.New()
+		key := commitID + "/" + treePath
+		h.Write([]byte(key))
+		sha := hex.EncodeToString(h.Sum(nil))
+		isExist, err := fileMeta_model.IsFileMetaExist(sha)
+
 		if err != nil {
 			return nil, err
 		}
 
 		if isExist {
-			file, err := fileMeta_model.GetFileMeta(ctx, base64.StdEncoding.EncodeToString([]byte(treePath)))
+			file, err := fileMeta_model.GetFileMeta(sha)
 			if err != nil {
 				return nil, err
 			}

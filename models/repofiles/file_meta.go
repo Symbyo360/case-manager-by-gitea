@@ -8,14 +8,14 @@ import (
 
 type FileMeta struct {
 	ID     int64  `xorm:"pk autoincr"`
-	Sha    string `xorm:"UNIQUE NOT NULL"`
-	Sha256 string `xorm:"varchar(1000) UNIQUE NOT NULL"`
+	Sha    string `xorm:"varchar(260) UNIQUE NOT NULL"`
+	Sha256 string `xorm:"varchar(260) NOT NULL"`
 }
 
 func init() {
 	db.RegisterModel(new(FileMeta))
 }
-func IsFileMetaExist(ctx context.Context, sha string) (bool, error) {
+func IsFileMetaExist(sha string) (bool, error) {
 	if len(sha) == 0 {
 		return false, nil
 	}
@@ -25,29 +25,29 @@ func IsFileMetaExist(ctx context.Context, sha string) (bool, error) {
 
 }
 
-func UpdateFileMeta(ctx context.Context, Sha string, Sha256 string) error {
-	isFileExist, err := IsFileMetaExist(ctx, Sha)
+func UpdateFileMeta(Sha string, Sha256 string) error {
+	isFileExist, err := IsFileMetaExist(Sha)
 	if err != nil {
 		return err
 	}
 	if !isFileExist {
-		return CreatFileMeta(&FileMeta{
+		return CreateFileMeta(&FileMeta{
 			Sha:    Sha,
 			Sha256: Sha256,
 		})
 	}
-	_, err = db.GetEngine(ctx).Exec("UPDATE `file_meta` SET sha256 = ? WHERE sha = ?", Sha256, Sha)
+	_, err = db.GetEngine(db.DefaultContext).Exec("UPDATE `file_meta` SET sha256 = ? WHERE sha = ?", Sha256, Sha)
 	return err
 }
 
-func CreatFileMeta(f *FileMeta) (err error) {
+func CreateFileMeta(f *FileMeta) (err error) {
 	ctx, committer, err := db.TxContext(db.DefaultContext)
 	if err != nil {
 		return err
 	}
 	defer committer.Close()
 
-	isExist, err := IsFileMetaExist(ctx, f.Sha)
+	isExist, err := IsFileMetaExist(f.Sha)
 	if err != nil {
 		return err
 	} else if isExist {
@@ -68,9 +68,9 @@ func DeleteFileMeta(ctx context.Context, sha string) (int64, error) {
 	return affected, nil
 }
 
-func GetFileMeta(ctx context.Context, sha string) (*FileMeta, error) {
-	f := &FileMeta{Sha: sha}
-	isExist, err := db.GetEngine(ctx).Get(f)
+func GetFileMeta(sha string) (*FileMeta, error) {
+	f := &FileMeta{}
+	isExist, err := db.GetEngine(db.DefaultContext).Where("sha = ?", sha).Get(f)
 	if err != nil {
 		return nil, err
 	}

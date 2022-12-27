@@ -6,7 +6,8 @@ package files
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"path"
 	"strings"
@@ -799,22 +800,6 @@ func CreateOrUpdateOrDeleteRepoFiles(ctx context.Context, repo *repo_model.Repos
 					content = pointer.StringContent()
 				}
 			}
-			if opts.Files[i].FileAction != DeleteFileAction {
-
-				if err = fileMeta_model.CreatFileMeta(&fileMeta_model.FileMeta{Sha: base64.StdEncoding.EncodeToString([]byte(opts.Files[i].TreePath)), Sha256: opts.Files[i].SHA256}); err != nil {
-					return nil, err
-				} else {
-					log.Debug("file is created successfully")
-				}
-			} else {
-				id, err := fileMeta_model.DeleteFileMeta(ctx, base64.StdEncoding.EncodeToString([]byte(opts.Files[i].TreePath)))
-				if err != nil {
-					return nil, err
-				} else {
-					log.Debug("%v", id)
-				}
-			}
-
 			// Add the object to the database
 			objectHash, err := t.HashObject(strings.NewReader(content))
 			if err != nil {
@@ -864,8 +849,7 @@ func CreateOrUpdateOrDeleteRepoFiles(ctx context.Context, repo *repo_model.Repos
 	if err != nil {
 		return nil, err
 	}
-	// git commit-tree <LastCommitID>
-	// DAG ->
+
 	// Now commit the tree
 	var commitHash string
 	if opts.Files[0].Dates != nil {
@@ -876,7 +860,6 @@ func CreateOrUpdateOrDeleteRepoFiles(ctx context.Context, repo *repo_model.Repos
 	if err != nil {
 		return nil, err
 	}
-
 	// Then push this tree to NewBranch
 	if err := t.Push(doer, commitHash, opts.NewBranch); err != nil {
 		log.Error("%T %v", err, err)
@@ -888,6 +871,35 @@ func CreateOrUpdateOrDeleteRepoFiles(ctx context.Context, repo *repo_model.Repos
 		return nil, err
 	}
 
+	h := sha256.New()
+	for i := 0; i < len(opts.Files); i++ {
+		key := commit.ID.String() + "/" + opts.Files[i].TreePath
+		h.Reset()
+		h.Write([]byte(key))
+		sha := hex.EncodeToString(h.Sum(nil))
+		if opts.Files[i].FileAction != DeleteFileAction {
+			if opts.Files[i].IsNewFile {
+				if err = fileMeta_model.CreateFileMeta(&fileMeta_model.FileMeta{Sha: sha, Sha256: opts.Files[i].SHA256}); err != nil {
+					return nil, err
+				} else {
+					log.Debug("file is created successfully")
+				}
+			} else {
+				if err = fileMeta_model.UpdateFileMeta(sha, opts.Files[i].SHA256); err != nil {
+					return nil, err
+				} else {
+					log.Debug("file is updated successfully")
+				}
+			}
+		} else {
+			id, err := fileMeta_model.DeleteFileMeta(ctx, sha)
+			if err != nil {
+				return nil, err
+			} else {
+				log.Debug("%v", id)
+			}
+		}
+	}
 	pushedFilesRes := PushedFilesRes{}
 
 	for j := 0; j < len(opts.Files); j++ {
@@ -899,10 +911,10 @@ func CreateOrUpdateOrDeleteRepoFiles(ctx context.Context, repo *repo_model.Repos
 			}
 
 			pushedFileRes := PushedFileRes{
-				Name: file.Content.Name,
-				Path: file.Content.Path,
-				SHA:  file.Content.SHA,
-				// SHA256: file.Content.SHA256,
+				Name:   file.Content.Name,
+				Path:   file.Content.Path,
+				SHA:    file.Content.SHA,
+				SHA256: file.Content.SHA256,
 			}
 			pushedFilesRes.Files = append(pushedFilesRes.Files, &pushedFileRes)
 			pushedFilesRes.Commit = file.Commit
