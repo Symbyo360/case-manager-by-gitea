@@ -903,13 +903,12 @@ func CreateOrUpdateOrDeleteRepoFiles(ctx context.Context, repo *repo_model.Repos
 	pushedFilesRes := PushedFilesRes{}
 
 	for j := 0; j < len(opts.Files); j++ {
+		file, err := GetFileResponseFromCommit(ctx, repo, commit, opts.NewBranch, opts.Files[j].TreePath)
+		if err != nil {
+			return nil, err
+		}
 
-		if opts.Files[j].FileAction != DeleteFileAction {
-			file, err := GetFileResponseFromCommit(ctx, repo, commit, opts.NewBranch, opts.Files[j].TreePath)
-			if err != nil {
-				return nil, err
-			}
-
+		if file.Content != nil {
 			pushedFileRes := PushedFileRes{
 				Name:   file.Content.Name,
 				Path:   file.Content.Path,
@@ -917,8 +916,10 @@ func CreateOrUpdateOrDeleteRepoFiles(ctx context.Context, repo *repo_model.Repos
 				SHA256: file.Content.SHA256,
 			}
 			pushedFilesRes.Files = append(pushedFilesRes.Files, &pushedFileRes)
-			pushedFilesRes.Commit = file.Commit
 		}
+
+		pushedFilesRes.Commit = file.Commit
+
 	}
 
 	return &pushedFilesRes, nil
