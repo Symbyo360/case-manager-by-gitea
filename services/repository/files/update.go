@@ -6,6 +6,8 @@ package files
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"path"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	"code.gitea.io/gitea/models"
 	git_model "code.gitea.io/gitea/models/git"
 	repo_model "code.gitea.io/gitea/models/repo"
+	fileMeta_model "code.gitea.io/gitea/models/repofiles"
 	user_model "code.gitea.io/gitea/models/user"
 	"code.gitea.io/gitea/modules/charset"
 	"code.gitea.io/gitea/modules/git"
@@ -57,6 +60,7 @@ type UpdateRepoFileOptions struct {
 	Message      string
 	Content      string
 	SHA          string
+	SHA256       string
 	IsNewFile    bool
 	Author       *IdentityOptions
 	Committer    *IdentityOptions
@@ -77,10 +81,10 @@ type UpdateRepoFilesOptions struct {
 }
 
 type PushedFileRes struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
-	SHA  string `json:"sha"`
-	// SHA256 string `json:"sha256"`
+	Name   string `json:"name"`
+	Path   string `json:"path"`
+	SHA    string `json:"sha"`
+	SHA256 string `json:"sha256"`
 }
 
 type PushedFilesRes struct {
@@ -856,7 +860,6 @@ func CreateOrUpdateOrDeleteRepoFiles(ctx context.Context, repo *repo_model.Repos
 	if err != nil {
 		return nil, err
 	}
-
 	// Then push this tree to NewBranch
 	if err := t.Push(doer, commitHash, opts.NewBranch); err != nil {
 		log.Error("%T %v", err, err)
@@ -868,25 +871,55 @@ func CreateOrUpdateOrDeleteRepoFiles(ctx context.Context, repo *repo_model.Repos
 		return nil, err
 	}
 
+	h := sha256.New()
+	for i := 0; i < len(opts.Files); i++ {
+		key := commit.ID.String() + "/" + opts.Files[i].TreePath
+		h.Reset()
+		h.Write([]byte(key))
+		sha := hex.EncodeToString(h.Sum(nil))
+		if opts.Files[i].FileAction != DeleteFileAction {
+			if opts.Files[i].IsNewFile {
+				if err = fileMeta_model.CreateFileMeta(&fileMeta_model.FileMeta{Sha: sha, Sha256: opts.Files[i].SHA256}); err != nil {
+					return nil, err
+				} else {
+					log.Debug("file is created successfully")
+				}
+			} else {
+				if err = fileMeta_model.UpdateFileMeta(sha, opts.Files[i].SHA256); err != nil {
+					return nil, err
+				} else {
+					log.Debug("file is updated successfully")
+				}
+			}
+		} else {
+			id, err := fileMeta_model.DeleteFileMeta(ctx, sha)
+			if err != nil {
+				return nil, err
+			} else {
+				log.Debug("%v", id)
+			}
+		}
+	}
 	pushedFilesRes := PushedFilesRes{}
 
 	for j := 0; j < len(opts.Files); j++ {
+		file, err := GetFileResponseFromCommit(ctx, repo, commit, opts.NewBranch, opts.Files[j].TreePath)
+		if err != nil {
+			return nil, err
+		}
 
-		if opts.Files[j].FileAction != DeleteFileAction {
-			file, err := GetFileResponseFromCommit(ctx, repo, commit, opts.NewBranch, opts.Files[j].TreePath)
-			if err != nil {
-				return nil, err
-			}
-
+		if file.Content != nil {
 			pushedFileRes := PushedFileRes{
-				Name: file.Content.Name,
-				Path: file.Content.Path,
-				SHA:  file.Content.SHA,
-				// SHA256: file.Content.SHA256,
+				Name:   file.Content.Name,
+				Path:   file.Content.Path,
+				SHA:    file.Content.SHA,
+				SHA256: file.Content.SHA256,
 			}
 			pushedFilesRes.Files = append(pushedFilesRes.Files, &pushedFileRes)
-			pushedFilesRes.Commit = file.Commit
 		}
+
+		pushedFilesRes.Commit = file.Commit
+
 	}
 
 	return &pushedFilesRes, nil

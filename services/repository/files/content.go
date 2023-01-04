@@ -5,6 +5,8 @@ package files
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/url"
 	"path"
@@ -12,6 +14,7 @@ import (
 
 	"code.gitea.io/gitea/models"
 	repo_model "code.gitea.io/gitea/models/repo"
+	fileMeta_model "code.gitea.io/gitea/models/repofiles"
 	"code.gitea.io/gitea/modules/git"
 	"code.gitea.io/gitea/modules/setting"
 	api "code.gitea.io/gitea/modules/structs"
@@ -197,6 +200,28 @@ func GetContents(ctx context.Context, repo *repo_model.Repository, treePath, ref
 			// We don't show the content if we are getting a list of FileContentResponses
 			contentsResponse.Encoding = &blobResponse.Encoding
 			contentsResponse.Content = &blobResponse.Content
+		}
+		if err != nil {
+			return nil, err
+		}
+		contentsResponse.SHA256 = ""
+
+		h := sha256.New()
+		key := commitID + "/" + treePath
+		h.Write([]byte(key))
+		sha := hex.EncodeToString(h.Sum(nil))
+		isExist, err := fileMeta_model.IsFileMetaExist(sha)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if isExist {
+			file, err := fileMeta_model.GetFileMeta(sha)
+			if err != nil {
+				return nil, err
+			}
+			contentsResponse.SHA256 = file.Sha256
 		}
 	} else if entry.IsDir() {
 		contentsResponse.Type = string(ContentTypeDir)
