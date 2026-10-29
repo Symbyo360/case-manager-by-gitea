@@ -19,7 +19,7 @@ volumes:
 
 steps:
   - name: deps-frontend
-    image: node:18
+    image: node:22.23.4
     pull: always
     commands:
       - make deps-frontend
@@ -34,7 +34,7 @@ steps:
         path: /go
 
   - name: lint-frontend
-    image: node:18
+    image: node:22.23.4
     commands:
       - make lint-frontend
     depends_on: [deps-frontend]
@@ -82,7 +82,7 @@ steps:
         path: /go
 
   - name: checks-frontend
-    image: node:18
+    image: node:22.23.4
     commands:
       - make checks-frontend
     depends_on: [deps-frontend]
@@ -97,13 +97,13 @@ steps:
         path: /go
 
   - name: test-frontend
-    image: node:18
+    image: node:22.23.4
     commands:
       - make test-frontend
     depends_on: [lint-frontend]
 
   - name: build-frontend
-    image: node:18
+    image: node:22.23.4
     commands:
       - make frontend
     depends_on: [deps-frontend]
@@ -529,13 +529,13 @@ services:
 
 steps:
   - name: deps-frontend
-    image: node:18
+    image: node:22.23.4
     pull: always
     commands:
       - make deps-frontend
 
   - name: build-frontend
-    image: node:18
+    image: node:22.23.4
     commands:
       - make frontend
     depends_on: [deps-frontend]
@@ -553,6 +553,7 @@ steps:
   - name: test-e2e
     image: mcr.microsoft.com/playwright:v1.29.0-focal
     commands:
+      - curl -sL https://deb.nodesource.com/setup_22.x | bash - && apt-get -qqy install nodejs=22.23.4-1nodesource1
       - curl -sLO https://go.dev/dl/go1.19.linux-amd64.tar.gz && tar -C /usr/local -xzf go1.19.linux-amd64.tar.gz
       - groupadd --gid 1001 gitea && useradd -m --gid 1001 --uid 1001 gitea
       - apt-get -qq update && apt-get -qqy install build-essential
@@ -710,7 +711,7 @@ steps:
       - git fetch --tags --force
 
   - name: deps-frontend
-    image: node:18
+    image: node:22.23.4
     pull: always
     commands:
       - make deps-frontend
@@ -728,8 +729,8 @@ steps:
     image: techknowlogick/xgo:go-1.19.x
     pull: always
     commands:
-      # Upgrade to node 18 once https://github.com/techknowlogick/xgo/issues/163 is resolved
-      - curl -sL https://deb.nodesource.com/setup_16.x | bash - && apt-get -qqy install nodejs
+      # Requires an xgo base image compatible with Node.js 22 (libc6 >= 2.28).
+      - curl -sL https://deb.nodesource.com/setup_22.x | bash - && apt-get -qqy install nodejs=22.23.4-1nodesource1
       - export PATH=$PATH:$GOPATH/bin
       - make release
     environment:
@@ -831,7 +832,7 @@ steps:
       - git fetch --tags --force
 
   - name: deps-frontend
-    image: node:18
+    image: node:22.23.4
     pull: always
     commands:
       - make deps-frontend
@@ -849,8 +850,8 @@ steps:
     image: techknowlogick/xgo:go-1.19.x
     pull: always
     commands:
-      # Upgrade to node 18 once https://github.com/techknowlogick/xgo/issues/163 is resolved
-      - curl -sL https://deb.nodesource.com/setup_16.x | bash - && apt-get -qqy install nodejs
+      # Requires an xgo base image compatible with Node.js 22 (libc6 >= 2.28).
+      - curl -sL https://deb.nodesource.com/setup_22.x | bash - && apt-get -qqy install nodejs=22.23.4-1nodesource1
       - export PATH=$PATH:$GOPATH/bin
       - make release
     environment:

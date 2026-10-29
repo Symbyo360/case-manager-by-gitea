@@ -1,4 +1,7 @@
 {
+  "engines": {
+    "node": "^22.23.4"
+  },
   "dependencies": {
     "fomantic-ui": "2.8.7"
   }
